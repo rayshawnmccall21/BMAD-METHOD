@@ -1,4 +1,5 @@
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const fs = require('fs-extra');
 const chalk = require('chalk');
 const ora = require('ora');
@@ -1109,6 +1110,12 @@ class Installer {
 
       spinner.succeed('Module-specific installers completed');
 
+      spinner.stop();
+      console.log(chalk.cyan('\nInstalling bmad-driver (Python)...'));
+      await this.installBmadDriver({ verbose: config.verbose });
+      console.log(chalk.green('✓ bmad-driver installed'));
+      spinner.start('Continuing installation...');
+
       // Note: Manifest files are already created by ManifestGenerator above
       // No need to create legacy manifest.csv anymore
 
@@ -1201,6 +1208,53 @@ class Installer {
     } catch (error) {
       spinner.fail('Installation failed');
       throw error;
+    }
+  }
+
+  resolvePipCommand() {
+    const candidates = [
+      { command: 'python3', baseArgs: ['-m', 'pip'], checkArgs: ['-m', 'pip', '--version'] },
+      { command: 'python', baseArgs: ['-m', 'pip'], checkArgs: ['-m', 'pip', '--version'] },
+      { command: 'py', baseArgs: ['-3', '-m', 'pip'], checkArgs: ['-3', '-m', 'pip', '--version'] },
+      { command: 'pip', baseArgs: [], checkArgs: ['--version'] },
+    ];
+
+    for (const candidate of candidates) {
+      const result = spawnSync(candidate.command, candidate.checkArgs, { stdio: 'pipe' });
+      if (result && result.status === 0) {
+        return { command: candidate.command, baseArgs: candidate.baseArgs };
+      }
+    }
+
+    return null;
+  }
+
+  async installBmadDriver(options = {}) {
+    const driverPath = path.join(getProjectRoot(), 'src', 'bmad-driver');
+    if (!(await fs.pathExists(driverPath))) {
+      throw new Error(`bmad-driver source not found at ${driverPath}`);
+    }
+
+    const pipCommand = this.resolvePipCommand();
+    if (!pipCommand) {
+      throw new Error('Python 3.9+ with pip is required to install bmad-driver.');
+    }
+
+    const installArgs = [...pipCommand.baseArgs, 'install', '--upgrade', '--disable-pip-version-check', '--no-input', driverPath];
+
+    const result = spawnSync(pipCommand.command, installArgs, {
+      stdio: options.verbose ? 'inherit' : 'pipe',
+    });
+
+    if (result && result.error) {
+      throw new Error(`Failed to run ${pipCommand.command}: ${result.error.message}`);
+    }
+
+    if (result && result.status !== 0) {
+      const stdout = result.stdout ? result.stdout.toString().trim() : '';
+      const stderr = result.stderr ? result.stderr.toString().trim() : '';
+      const details = stderr || stdout || `exit code ${result.status}`;
+      throw new Error(`bmad-driver install failed: ${details}`);
     }
   }
 

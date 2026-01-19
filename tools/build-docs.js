@@ -38,6 +38,7 @@ const LLM_EXCLUDE_PATTERNS = [
   'faq',
   'reference/glossary/',
   'explanation/game-dev/',
+  'how-to/customization/integrate-playwright-utils.md',
   // Note: Files/dirs starting with _ (like _STYLE_GUIDE.md, _archive/) are excluded in shouldExcludeFromLlm()
 ];
 

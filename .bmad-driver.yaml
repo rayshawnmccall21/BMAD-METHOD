@@ -1,0 +1,24 @@
+config_version: 1
+
+github:
+  repo: "rayshawnmccall21/BMAD-METHOD"
+  issue_labels:
+    - "bmad-driver"
+    - "automated"
+
+confidence:
+  profile: "default"
+  thresholds:
+    action: 0.7
+    understanding: 0.6
+    alignment: 0.8
+    risk: 0.5
+    novelty: 0.4
+    ambiguity: 0.6
+
+notifications:
+  slack_webhook: "${BMAD_SLACK_WEBHOOK}"
+
+bmad:
+  url: "ws://localhost:7171"
+  headers: {}

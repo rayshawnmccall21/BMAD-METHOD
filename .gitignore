@@ -57,6 +57,7 @@ z*/
 
 _bmad
 _bmad-output
+.bmad-driver/
 .claude
 .codex
 .github/chatmodes
